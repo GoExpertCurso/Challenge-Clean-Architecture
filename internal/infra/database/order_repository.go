@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/GoExpertCurso/Challenge-Clean-Architecture/internal/entity"
+	"github.com/hashicorp/go-multierror"
 )
 
 type OrderRepository struct {
@@ -24,6 +25,38 @@ func (r *OrderRepository) Save(order *entity.Order) error {
 		return err
 	}
 	return nil
+}
+
+func (r *OrderRepository) Orders() ([]entity.Order, error) {
+	rows, err := r.Db.Query(`Select id, price, tax, final_price from orders`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var orders []entity.Order
+	var scanErr error
+
+	for rows.Next() {
+		var id string
+		var price, tax, finalPrice float64
+
+		if err := rows.Scan(&id, &price, &tax, &finalPrice); err != nil {
+			scanErr = multierror.Append(scanErr, err)
+			continue
+		}
+
+		orders = append(orders, entity.Order{
+			ID:         id,
+			Price:      price,
+			Tax:        tax,
+			FinalPrice: finalPrice,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, multierror.Append(scanErr, err)
+	}
+
+	return orders, nil
 }
 
 func (r *OrderRepository) GetTotal() (int, error) {

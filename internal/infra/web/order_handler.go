@@ -47,3 +47,16 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *WebOrderHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
+	var dto []*usecase.OrderOutputDTO
+	getOrders := usecase.NewGetOrdersUseCase(h.OrderRepository)
+	dto, err := getOrders.Execute()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(dto)
+}
